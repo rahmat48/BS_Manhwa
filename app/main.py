@@ -855,3 +855,5 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 async def root():
     index_file = os.path.join(STATIC_DIR, "index.html")
     return FileResponse(index_file)
+
+# Auto sleep-lock protection on slice tasks
