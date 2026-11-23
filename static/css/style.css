@@ -1,0 +1,45 @@
+/* Custom Styles & Scrollbars for Manhwa Recap Slicer */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+.filter-chip.active {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.panel-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.panel-card:hover {
+  transform: translateY(-2px);
+  border-color: #6366f1;
+  box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15);
+}
+
+.panel-card.deselected {
+  opacity: 0.45;
+  filter: grayscale(40%);
+}
+
+.panel-thumb-container {
+  background-color: #050811;
+  background-image: radial-gradient(#1e293b 1px, transparent 1px);
+  background-size: 16px 16px;
+}
