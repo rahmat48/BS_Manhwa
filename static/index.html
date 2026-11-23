@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BS Manhwa Recap Slicer - Studio Pemotong Panel Otomatis</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
+
+  <!-- Navbar -->
+  <header class="border-b border-slate-800/80 bg-[#0d1322]/90 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="relative group">
+          <img src="/static/logo.png" alt="BS Logo" class="w-10 h-10 rounded-full border border-slate-700/80 shadow-md shadow-red-500/20 object-cover ring-2 ring-red-500/20 group-hover:scale-105 transition-all duration-200">
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            <span class="text-red-500 font-black tracking-wider text-xl drop-shadow-[0_2px_8px_rgba(239,68,68,0.3)]">BS</span>
+            <span class="text-slate-100 font-bold">Manhwa Recap Slicer</span>
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">Studio</span>
+          </h1>
+          <p class="text-xs text-slate-400">Potong panel komik otomatis & tata rapi per folder episode</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Slicer vs Enhancer) -->
+      <nav class="hidden md:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+        <button type="button" id="tab-nav-slicer" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-600 text-white shadow">
+          <span>✂️</span>
+          <span>Potong Panel</span>
+        </button>
+        <button type="button" id="tab-nav-enhancer" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
+          <span>✨</span>
+          <span>Enhance Gambar (AI)</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-extrabold border border-red-500/30">Baru</span>
+        </button>
+      </nav>
+      
+      <!-- GPU Live Utilization & Status Badges -->
+      <div class="flex items-center space-x-2.5 text-xs">
+        <div id="gpu-badge" class="hidden sm:inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 shadow-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="gpu-name-label" class="font-bold text-slate-200">GTX 1650</span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center gap-1 text-emerald-400 font-mono font-bold" title="Beban Pemakaian Chip GPU (%)">
+            <span>⚡</span>
+            <span id="gpu-load-label">0%</span>
+          </div>
+          <span class="text-slate-700">|</span>
+          <div class="flex items-center gap-1 text-indigo-300 font-mono text-[11px]" title="Penggunaan Memori VRAM GPU">
+            <span class="text-slate-500 font-sans">VRAM:</span>
+            <span id="gpu-vram-label" class="font-semibold text-slate-200">0.3 / 4.0 GB</span>
+          </div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          Server Aktif
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+
+    <!-- View 1: Panel Slicer -->
+    <div id="view-slicer" class="space-y-8">
+
+    <!-- Hero / Input Section -->
+    <section class="bg-gradient-to-b from-[#131b2e] to-[#0f172a] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <!-- Decorative background blur -->
+      <div class="absolute -top-24 -right-24 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- URL Input Area -->
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+            Link Chapter Manhwa
+          </label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <input
+                type="text"
+                id="url-input"
+                placeholder="Contoh: https://s1.shinigami.mx/chapter/b0bd977b-4a42-49c9-9d7e-3bfb44ac521d#mode=strip"
+                class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+              />
+              <button
+                type="button"
+                id="btn-paste-sample"
+                class="absolute right-2 top-2.5 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg border border-slate-700 transition"
+              >
+                Gunakan Contoh
+              </button>
+            </div>
+            <button
+              type="button"
+              id="btn-detect-series"
+              class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition whitespace-nowrap"
+            >
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              Cek Episode Lainnya
+            </button>
+          </div>
+        </div>
+
+        <!-- Detected Manga & Episode Range Box -->
+        <div id="series-detection-card" class="hidden bg-slate-900/80 border border-brand-500/30 rounded-xl p-4 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div>
+              <div class="text-xs text-brand-400 font-semibold uppercase tracking-wider">Seri Komik Terdeteksi</div>
+              <h3 id="detected-manga-title" class="text-base font-bold text-white">Second Life Ranker</h3>
+            </div>
+            <div class="text-xs text-slate-400">
+              Chapter Terpilih: <span id="detected-current-ch" class="font-bold text-white">237</span> (Tersedia Chapter <span id="detected-min-ch">1</span> s/d <span id="detected-max-ch">238</span>)
+            </div>
+          </div>
+
+          <!-- Range Episode Controls -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-center">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Dari Chapter</label>
+              <input type="number" id="start-chapter-input" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500" value="237" min="1">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Sampai Chapter</label>
+              <input type="number" id="end-chapter-input" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-brand-500" value="237" min="1">
+            </div>
+            <div class="text-xs text-slate-400 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800">
+              📁 <strong class="text-slate-200">Struktur:</strong> Folder <code class="text-brand-300" id="zip-folder-preview">Chapter_237/</code> per episode.
+            </div>
+          </div>
+
+          <!-- Parallel Execution Indicator Badge -->
+          <div id="parallel-workers-info" class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs bg-slate-950/80 border border-brand-500/30 px-3.5 py-2.5 rounded-xl text-slate-300">
+            <div class="flex items-center gap-2">
+              <span class="text-base text-brand-400">⚡</span>
+              <span>Penugasan Paralel: <strong id="parallel-workers-text" class="text-brand-300 font-bold">1 Episode (Tunggal)</strong></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-mono font-semibold border border-brand-500/30">Maks. 5 Worker Bersamaan</span>
+            </div>
+          </div>
+
+          <!-- Realtime Chapter Range Warning -->
+          <div id="chapter-range-warning" class="hidden text-xs text-amber-300 bg-amber-500/15 border border-amber-500/30 p-2.5 rounded-lg flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-sm">⚠️</span>
+              <span id="chapter-range-warning-text">Chapter melebihi episode yang tersedia.</span>
+            </div>
+            <button type="button" id="btn-fix-to-max" class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded font-semibold text-[11px] whitespace-nowrap transition border border-amber-500/30">
+              Gunakan Chapter Terbaru
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            id="btn-start-process"
+            class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 font-bold text-sm rounded-xl shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 transition duration-200"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L9.879 9.879m0 0L7 7m7 7l-4.242 4.242a3 3 0 01-4.242-4.242L9.879 9.879"/></svg>
+            <span id="btn-process-label">✂️ Potong & Muat Panel ke Cache</span>
+          </button>
+          <p class="text-xs text-slate-400">
+            💡 Gambar akan dipotong ke cache terlebih dahulu agar bisa kamu tinjau dan pilih sebelum dipindahkan.
+          </p>
+        </div>
+      </div>
+
+      <!-- Settings / Options Bar -->
+      <div class="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+        
+        <!-- Option 1: GPU Acceleration -->
+        <label class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-start gap-3 cursor-pointer hover:border-slate-700 transition">
+          <input type="checkbox" id="opt-use-gpu" checked class="mt-1 w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500">
+          <div>
+            <div class="font-semibold text-emerald-400 flex items-center justify-between">
+              <span>⚡ GPU VRAM Turbo</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">High Load</span>
+            </div>
+            <div class="text-slate-400 mt-0.5" id="gpu-subtext">Memaksimalkan komputasi VRAM & 8 core GPU paralel.</div>
+          </div>
+        </label>
+
+        <!-- Option 2: Width Mode -->
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-start gap-3">
+          <div class="text-brand-400 text-lg">📏</div>
+          <div>
+            <div class="font-semibold text-slate-200">Lebar Asli (Opsi A)</div>
+            <div class="text-slate-400 mt-0.5">Mempertahankan lebar original (~720px) agar leluasa diedit.</div>
+          </div>
+        </div>
+
+        <!-- Option 3: Filter Banner -->
+        <label class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-start gap-3 cursor-pointer hover:border-slate-700 transition">
+          <input type="checkbox" id="opt-filter-banners" checked class="mt-1 w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500">
+          <div>
+            <div class="font-semibold text-slate-200">Auto-Hapus Banner</div>
+            <div class="text-slate-400 mt-0.5">Kecualikan banner credit & discord di awal/akhir.</div>
+          </div>
+        </label>
+
+        <!-- Option 4: Filter Standalone Speech Bubbles -->
+        <label class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-start gap-3 cursor-pointer hover:border-slate-700 transition">
+          <input type="checkbox" id="opt-filter-speech-bubbles" checked class="mt-1 w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500">
+          <div>
+            <div class="font-semibold text-amber-300">Abaikan Balon Teks</div>
+            <div class="text-slate-400 mt-0.5">Gelembung teks terpisah tidak dicentang (bisa dicek manual).</div>
+          </div>
+        </label>
+
+        <!-- Option 5: Long Panels > 2500px -->
+        <label class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex items-start gap-3 cursor-pointer hover:border-slate-700 transition">
+          <input type="checkbox" id="opt-split-long" checked class="mt-1 w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500">
+          <div>
+            <div class="font-semibold text-slate-200">Panel Panjang (>2500px)</div>
+            <div class="text-slate-400 mt-0.5">Simpan original utuh + buatkan versi split (bagian 1, 2).</div>
+          </div>
+        </label>
+
+        <!-- Option 6: Cache Auto-Clean & Management -->
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+          <div class="flex items-start gap-3">
+            <span class="text-rose-400 text-lg">🗑️</span>
+            <div class="flex-1">
+              <div class="font-semibold text-slate-200 flex items-center justify-between">
+                <span>Penyimpanan Cache</span>
+                <span id="settings-cache-text" class="text-rose-300 font-mono text-[11px]">0 MB</span>
+              </div>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-400 mt-1">
+                <input type="checkbox" id="opt-auto-clean-cache" checked class="w-3.5 h-3.5 rounded text-brand-600 bg-slate-800 border-slate-700">
+                <span class="text-[11px]">Auto-bersihkan saat proses baru</span>
+              </label>
+            </div>
+          </div>
+          <button type="button" id="btn-clear-cache-settings" class="mt-2.5 w-full py-1.5 px-2 bg-slate-800 hover:bg-rose-600/20 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-500/40 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Bersihkan Cache Sekarang
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Progress Card (Hidden by default) -->
+    <section id="progress-card" class="hidden bg-[#131b2e] border border-brand-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center animate-spin">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-sm text-slate-100" id="progress-title">Sedang memproses...</h3>
+            <p class="text-xs text-slate-400" id="progress-subtitle">Mengambil data chapter</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-lg font-bold text-brand-400" id="progress-pct">0%</span>
+        </div>
+      </div>
+      <!-- Progress Bar Track -->
+      <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+        <div id="progress-bar-fill" class="bg-gradient-to-r from-brand-600 to-indigo-500 h-full w-0 transition-all duration-300 rounded-full"></div>
+      </div>
+    </section>
+
+    <!-- Error Card (Hidden by default) -->
+    <div id="error-card" class="hidden bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 text-xs text-rose-300 flex items-center gap-3">
+      <span class="text-lg">⚠️</span>
+      <div id="error-message">Terjadi kesalahan.</div>
+    </div>
+
+    <!-- Results Section (Hidden until complete) -->
+    <section id="results-section" class="hidden space-y-6">
+      
+      <!-- Warning Banner if requested chapter was beyond latest -->
+      <div id="results-warning-banner" class="hidden text-xs text-amber-200 bg-amber-500/15 border border-amber-500/30 p-3 rounded-xl flex items-center gap-2.5">
+        <span class="text-base">ℹ️</span>
+        <span id="results-warning-text"></span>
+      </div>
+
+      <!-- 1. Dedicated Move Selected Panels to Target Folder Card -->
+      <div class="bg-gradient-to-r from-[#172036] via-[#131b2e] to-[#172036] border border-brand-500/40 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center text-xl font-bold border border-brand-500/30">
+              💾
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                Pindahkan Gambar Terpilih ke Folder Tujuan
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Hanya Yang Dicentang</span>
+              </h3>
+              <p class="text-xs text-slate-400">Pilih atau ubah folder tujuan di bawah, lalu klik tombol untuk memindahkan hanya panel yang kamu pilih.</p>
+            </div>
+          </div>
+          <div class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-brand-500/15 text-brand-300 border border-brand-500/30">
+            <span id="selected-move-badge">0</span> Gambar Dicentang
+          </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+          <div class="flex-1 flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <input
+                type="text"
+                id="target-folder-input"
+                value="D:\CODING\Manhwa Recap\output"
+                placeholder="Pilih folder tujuan di PC..."
+                class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
+              />
+            </div>
+            <button
+              type="button"
+              id="btn-browse-folder"
+              class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-1.5 transition whitespace-nowrap shadow-sm"
+              title="Buka penjelajah drive & folder di komputer"
+            >
+              <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+              <span>Pilih Folder Sendiri...</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            id="btn-execute-transfer"
+            class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            <span>Pindahkan <span id="btn-transfer-count-label">0</span> Gambar ke Folder</span>
+          </button>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="flex items-center gap-2 pt-1 text-[11px] text-slate-400 overflow-x-auto">
+          <span class="text-slate-500 font-semibold">Shortcut Cepat:</span>
+          <button type="button" id="btn-preset-output" class="hover:text-emerald-400 transition">📁 Output Proyek</button>
+          <span>•</span>
+          <button type="button" id="btn-preset-desktop" class="hover:text-emerald-400 transition">🖥️ Desktop</button>
+          <span>•</span>
+          <button type="button" id="btn-preset-downloads" class="hover:text-emerald-400 transition">📥 Downloads</button>
+        </div>
+      </div>
+
+      <!-- 2. Status Banner Sukses Transfer & Tombol Buka File Explorer -->
+      <div id="export-success-banner" class="hidden bg-gradient-to-r from-emerald-950/70 to-slate-900 border border-emerald-500/40 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3.5">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/30">
+            ✅
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Sukses Dipindahkan</span>
+              <span class="text-xs text-slate-400" id="export-count-label">0 Gambar terpilih</span>
+            </div>
+            <h3 class="text-sm font-bold text-white mt-1">
+              File Tersimpan di: <span class="font-mono text-emerald-300 font-normal text-xs" id="export-folder-path-display">D:\...</span>
+            </h3>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            id="btn-open-folder-primary"
+            class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-xs rounded-xl text-white shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+            Buka Folder di File Explorer
+          </button>
+        </div>
+      </div>
+      
+      <!-- Summary & Action Bar -->
+      <div class="bg-[#131b2e] border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-20 z-30 shadow-2xl backdrop-blur bg-opacity-95">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2" id="res-chapter-title">
+            Manga Title
+          </h2>
+          <div class="flex items-center gap-3 text-xs text-slate-400 mt-1 flex-wrap">
+            <span id="stat-total-chapters">0 Episode</span>
+            <span>•</span>
+            <span id="stat-total-panels">0 Panel Ditemukan</span>
+            <span>•</span>
+            <span class="text-amber-400" id="stat-speech-bubbles">0 Balon Teks Terpisah</span>
+            <span>•</span>
+            <span class="text-indigo-400 font-medium" id="stat-parallel-workers">1x Paralel</span>
+            <span>•</span>
+            <span class="text-emerald-400" id="stat-gpu-used">GPU Accelerated</span>
+          </div>
+        </div>
+
+        <!-- Controls: Select All, Select Art Only, Open Folder & Actions -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 bg-slate-800/80 hover:bg-slate-800 px-3 py-2 rounded-xl border border-slate-700 cursor-pointer">
+            <input type="checkbox" id="check-select-all" class="w-4 h-4 rounded text-brand-600 bg-slate-900 border-slate-700">
+            <span>Pilih Semua (<span id="selected-count">0</span>)</span>
+          </label>
+
+          <button
+            type="button"
+            id="btn-select-art-only"
+            class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 transition"
+            title="Hanya centang gambar ilustrasi (hilangkan centang pada balon teks)"
+          >
+            🖼️ Gambar Saja
+          </button>
+
+          <button
+            type="button"
+            id="btn-select-everything"
+            class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 transition"
+            title="Centang semua termasuk gelembung percakapan"
+          >
+            Semua (+ Teks)
+          </button>
+
+          <button
+            type="button"
+            id="btn-export-folder-custom"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition"
+            title="Simpan panel yang dicentang ke folder tertentu"
+          >
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+            Simpan Ulang ke Folder
+          </button>
+
+          <button
+            type="button"
+            id="btn-download-zip"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition"
+            title="Download ZIP instan (tanpa kompresi lemot)"
+          >
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            ZIP (<span id="download-btn-count">0</span>)
+          </button>
+
+          <button
+            type="button"
+            id="btn-clear-cache-results"
+            class="px-3 py-2 bg-slate-800 hover:bg-rose-600/20 text-slate-400 hover:text-rose-300 text-xs rounded-xl border border-slate-700 hover:border-rose-500/40 transition flex items-center gap-1.5"
+            title="Hapus file sementara / cache dari sesi ini"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Hapus Cache
+          </button>
+        </div>
+      </div>
+
+      <!-- Episode Switcher Tabs (for batch mode) -->
+      <div id="episode-tabs-container" class="flex items-center gap-2 overflow-x-auto pb-2 text-xs border-b border-slate-800">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="flex items-center gap-2 text-xs flex-wrap">
+        <span class="text-slate-400">Filter Tampilan:</span>
+        <button id="filter-all" class="px-3 py-1 rounded-lg bg-brand-600 text-white font-medium filter-chip active">Semua</button>
+        <button id="filter-art-only" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 filter-chip">🖼️ Gambar Saja</button>
+        <button id="filter-bubbles" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 filter-chip">💬 Balon Teks Saja</button>
+        <button id="filter-standard" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 filter-chip">Standard</button>
+        <button id="filter-full" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 filter-chip">Full Original (>2500px)</button>
+        <button id="filter-parts" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 filter-chip">Bagian Split</button>
+      </div>
+
+      <!-- Gallery Grid of Panels -->
+      <div id="panels-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Cards inserted dynamically -->
+      </div>
+    </section>
+
+    </div>
+    <!-- End View 1: Panel Slicer -->
+
+    <!-- View 2: Image Enhancer (AI Upscaler & Polish) -->
+    <div id="view-enhancer" class="hidden space-y-8">
+      
+      <!-- Enhancer Hero & Drag-and-Drop Dropzone -->
+      <section class="bg-gradient-to-b from-[#131b2e] to-[#0f172a] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden space-y-6">
+        <div class="absolute -top-24 -right-24 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 font-bold border border-red-500/30">AI Upscaler Studio</span>
+            <span class="text-xs text-slate-400">GTX 1650 Vulkan Accelerated</span>
+          </div>
+          <h2 class="text-xl font-extrabold text-white">Tingkatkan Resolusi & Ketajaman Gambar Manhwa</h2>
+          <p class="text-xs text-slate-400 mt-1">Seret 1 atau beberapa folder komik ke area di bawah. Gambar otomatis ditingkatkan dan disimpan rapi sesuai struktur folder aslinya.</p>
+        </div>
+
+        <!-- Big Drag & Drop Zone -->
+        <div id="enhancer-dropzone" class="border-2 border-dashed border-slate-700 hover:border-red-500/80 bg-slate-900/60 hover:bg-slate-900/90 rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer group relative">
+          <input type="file" id="enhancer-file-input" webkitdirectory directory multiple class="hidden">
+          <input type="file" id="enhancer-single-file-input" multiple accept="image/png,image/jpeg,image/webp" class="hidden">
+          
+          <div class="w-16 h-16 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center mx-auto text-3xl mb-3 group-hover:scale-110 transition border border-red-500/20 shadow-lg shadow-red-500/10">
+            📂
+          </div>
+          <h3 class="text-base font-bold text-white mb-1">
+            Seret & Lepas Gambar atau Folder ke Sini
+          </h3>
+          <p class="text-xs text-slate-400 max-w-md mx-auto mb-4">
+            Bisa <strong>1 gambar tunggal</strong>, beberapa gambar, ataupun seluruh <strong>folder episode</strong> (<code class="text-red-300 font-mono">Chapter_236</code>, dll).
+          </p>
+
+          <div class="flex items-center justify-center gap-2.5 flex-wrap">
+            <button type="button" id="btn-browse-enhance-files" class="px-3.5 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-600/25 flex items-center gap-1.5 transition">
+              <span>🖼️</span>
+              <span>Pilih Gambar...</span>
+            </button>
+            <button type="button" id="btn-browse-enhance-folders" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <span>📁</span>
+              <span>Pilih Folder...</span>
+            </button>
+            <button type="button" id="btn-import-from-slicer" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <span>⚡</span>
+              <span>Ambil Hasil Potongan Terakhir</span>
+            </button>
+          </div>
+          <div class="mt-3 text-[11px] text-slate-500">
+            <span>Atau ingin pilih folder lokal tanpa upload? </span>
+            <button type="button" id="btn-browse-enhance-modal" class="text-slate-400 hover:text-red-400 underline transition">Jelajahi Drive (Explorer)</button>
+          </div>
+        </div>
+
+        <!-- Detected Folders List & Chips -->
+        <div id="enhancer-folders-card" class="hidden bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">Folder Terpilih:</span>
+              <span class="text-xs font-mono text-red-400 font-bold" id="enhancer-summary-text">0 Folder • 0 Gambar</span>
+            </div>
+            <button type="button" id="btn-clear-enhance-folders" class="text-[11px] text-slate-400 hover:text-rose-400 transition">
+              Bersihkan Semua
+            </button>
+          </div>
+          <div id="enhancer-folder-chips-container" class="flex items-center gap-2 flex-wrap">
+            <!-- Chips injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Target Output Selection -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-200">
+              📂 Folder Tujuan Simpan Hasil Enhance
+            </label>
+            <span class="text-[11px] text-emerald-400 font-medium">Struktur subfolder otomatis disesuaikan dengan folder asal</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              id="enhancer-target-folder"
+              placeholder="D:\CODING\Manhwa Recap\output\Enhanced"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-red-500"
+            />
+            <button
+              type="button"
+              id="btn-browse-enhance-target"
+              class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 shrink-0 transition"
+            >
+              📁 Pilih Folder Sendiri...
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-slate-400">
+            <span>Shortcut Cepat:</span>
+            <button type="button" id="btn-preset-enhance-default" class="hover:text-red-400 transition underline">Default (output/Enhanced)</button>
+            <span>•</span>
+            <button type="button" id="btn-preset-enhance-fileenhancer" class="hover:text-red-400 transition underline">D:\File_Enhancer</button>
+            <span>•</span>
+            <button type="button" id="btn-preset-enhance-desktop" class="hover:text-red-400 transition underline">🖥️ Desktop</button>
+          </div>
+        </div>
+
+        <!-- Enhance Mode Options -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Pilih Mode Peningkatan Kualitas:
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" id="enhance-models-grid">
+            
+            <!-- Option 1: 2x Anime HD -->
+            <label class="enhance-mode-card active bg-slate-900/80 p-3.5 rounded-xl border border-red-500/50 flex flex-col justify-between cursor-pointer hover:border-red-500 transition ring-1 ring-red-500/30">
+              <input type="radio" name="enhance-mode" value="realesrgan-x4plus-anime" data-scale="2" checked class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">⚡ 2x Anime HD</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-extrabold border border-red-500/30">Rekomendasi</span>
+                </div>
+                <p class="text-[11px] text-slate-400">~1440px (2K). Sangat cepat (~0.2s), garis tajam, pas untuk timeline video.</p>
+              </div>
+            </label>
+
+            <!-- Option 2: 4x Anime 4K -->
+            <label class="enhance-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="enhance-mode" value="realesrgan-x4plus-anime" data-scale="4" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">🔥 4x Anime 4K</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">Ultra</span>
+                </div>
+                <p class="text-[11px] text-slate-400">~2880px (4K). Detail maksimum, bagus untuk poster/Thumbnail YouTube.</p>
+              </div>
+            </label>
+
+            <!-- Option 3: Fast Anime V3 -->
+            <label class="enhance-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="enhance-mode" value="realesr-animevideov3" data-scale="2" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">🚀 Fast Anime V3</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-extrabold border border-blue-500/30">Cepat</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Paling ringan dan kencang untuk batch ratusan panel komik.</p>
+              </div>
+            </label>
+
+            <!-- Option 4: Smart Polish Non-AI -->
+            <label class="enhance-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="enhance-mode" value="smart-polish" data-scale="1" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">🪄 Smart Polish</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/30">0 Detik</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Penajaman garis tepi & kontras digital instan tanpa beban GPU AI.</p>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Start Enhance Button -->
+        <div class="pt-2">
+          <button
+            type="button"
+            id="btn-start-enhance"
+            class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 hover:from-red-500 hover:to-pink-500 font-bold text-sm rounded-xl shadow-lg shadow-red-500/25 flex items-center justify-center gap-2 transition duration-200"
+          >
+            <span>✨</span>
+            <span id="btn-start-enhance-label">Mulai Tingkatkan Gambar</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- Enhancer Progress Card -->
+      <section id="enhancer-progress-card" class="hidden bg-[#131b2e] border border-red-500/40 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center animate-spin">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-sm text-white" id="enhancer-progress-title">Sedang Meningkatkan Kualitas...</h3>
+              <p class="text-xs text-slate-400 font-mono" id="enhancer-progress-subtitle">Memproses antrean gambar</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-lg font-bold text-red-400" id="enhancer-progress-pct">0%</span>
+            <button type="button" id="btn-cancel-enhance" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 rounded-lg text-xs font-semibold border border-slate-700 transition">
+              ⏹️ Batalkan
+            </button>
+          </div>
+        </div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+          <div id="enhancer-progress-bar-fill" class="bg-gradient-to-r from-red-600 via-rose-500 to-pink-500 h-full w-0 transition-all duration-200 rounded-full"></div>
+        </div>
+      </section>
+
+      <!-- Enhancer Success Banner -->
+      <div id="enhancer-success-card" class="hidden bg-gradient-to-r from-emerald-950/70 to-slate-900 border border-emerald-500/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/30">
+            🎉
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">Enhance Selesai</span>
+              <span class="text-xs text-slate-400" id="enhancer-success-count">0 Gambar berhasil diproses</span>
+            </div>
+            <h3 class="text-sm font-bold text-white mt-1">
+              Tersimpan rapi di: <span class="font-mono text-emerald-300 font-normal text-xs" id="enhancer-success-path">D:\...</span>
+            </h3>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            id="btn-open-enhanced-folder"
+            class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold text-xs rounded-xl text-white shadow-lg shadow-emerald-600/30 flex items-center gap-2 transition"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+            Buka Folder di File Explorer
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <!-- End View 2: Image Enhancer -->
+
+  </main>
+
+  <!-- In-App Folder Explorer Modal -->
+  <div id="folder-picker-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#131b2e] border border-slate-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <!-- Modal Header -->
+      <div class="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📂</span>
+          <div>
+            <h3 class="text-sm font-bold text-white">Pilih Folder Target Penyimpanan</h3>
+            <p class="text-[11px] text-slate-400">Jelajahi drive & folder di komputermu secara langsung</p>
+          </div>
+        </div>
+        <button id="btn-close-folder-modal" class="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Quick Shortcuts & Drive Pills -->
+      <div class="px-4 py-2.5 bg-slate-900/60 border-b border-slate-800/80 flex items-center gap-2 overflow-x-auto text-xs">
+        <span class="text-slate-500 text-[11px] font-semibold uppercase shrink-0">Drive:</span>
+        <div id="modal-drives-list" class="flex items-center gap-1.5 shrink-0">
+          <!-- Drive pills injected dynamically -->
+        </div>
+        <span class="text-slate-700 mx-1">|</span>
+        <div id="modal-shortcuts-list" class="flex items-center gap-1.5 shrink-0">
+          <!-- Shortcut pills injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Current Path Bar & Up Button & New Folder Button -->
+      <div class="p-3 bg-slate-950/80 border-b border-slate-800 flex items-center gap-2 text-xs">
+        <button id="btn-modal-folder-up" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1 transition" title="Naik satu level folder">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+          <span>Naik</span>
+        </button>
+
+        <div class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 font-mono text-slate-300 text-[11px] truncate" id="modal-current-path-text">
+          D:\CODING\Manhwa Recap\output
+        </div>
+
+        <button id="btn-modal-new-folder" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1 transition text-[11px]" title="Buat folder baru">
+          <span>➕ Folder Baru</span>
+        </button>
+      </div>
+
+      <!-- Folder List Grid/List -->
+      <div class="flex-1 overflow-y-auto p-3 space-y-1 min-h-[260px] max-h-[380px]" id="modal-folders-container">
+        <!-- Folders injected dynamically -->
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between gap-3">
+        <div class="text-xs text-slate-400 truncate flex-1">
+          Folder Terpilih: <strong id="modal-selected-folder-display" class="text-emerald-400 font-mono">D:\...</strong>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-cancel-folder-modal" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">
+            Batal
+          </button>
+          <button id="btn-confirm-folder-modal" class="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-600/25 flex items-center gap-1.5 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span id="modal-confirm-btn-label">Pilih Folder Ini & Pindahkan</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Lightbox Modal for Full Image Preview -->
+  <div id="preview-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-5xl flex items-center justify-between pb-3 text-slate-300 border-b border-slate-800">
+      <div class="flex items-center gap-2 text-sm font-semibold">
+        <span id="modal-title">Panel Preview</span>
+        <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700" id="modal-dim">720x1000</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <a id="modal-download-btn" href="#" download class="px-3 py-1 bg-brand-600 hover:bg-brand-500 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download PNG
+        </a>
+        <button id="modal-close-btn" class="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 w-full flex items-center justify-center overflow-auto p-4">
+      <img id="modal-img" src="" alt="Panel preview" class="max-h-[85vh] max-w-full object-contain rounded-lg shadow-2xl border border-slate-800">
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-[#0d1322] py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+    <img src="/static/logo.png" alt="BS Logo" class="w-4 h-4 rounded-full inline-block">
+    <span>BS Manhwa Recap Slicer • Akselerasi GPU • Format PNG Lossless • Penataan Folder per Episode</span>
+  </footer>
+
+  <!-- Floating Anti-Sleep Button (Pojok Kanan Bawah) -->
+  <aside aria-label="Anti-Sleep Controls" class="fixed bottom-6 right-6 z-40 flex items-center">
+    <button
+      type="button"
+      id="btn-toggle-anti-sleep"
+      class="group flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-slate-700/80 bg-slate-900/95 hover:bg-slate-800 text-slate-300 hover:text-white shadow-xl shadow-black/50 backdrop-blur-md transition-all duration-200 hover:scale-105 active:scale-95"
+      title="Cegah PC / Layar Masuk Mode Sleep Saat Rendering / Idle"
+    >
+      <span class="text-base group-hover:rotate-12 transition-transform duration-200">☕</span>
+      <div class="flex items-center gap-1.5 text-xs font-semibold">
+        <span class="tracking-wide">Anti-Sleep:</span>
+        <span id="anti-sleep-status" class="font-bold font-mono text-[11px] text-slate-400">OFF</span>
+      </div>
+      <span id="anti-sleep-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition"></span>
+    </button>
+  </aside>
+
+  <!-- Toast Notification (Floats neatly above the Anti-Sleep button) -->
+  <div id="toast" class="hidden fixed bottom-20 right-6 z-50 bg-slate-900/95 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl backdrop-blur flex items-center gap-3 text-xs transition-all duration-300">
+    <span id="toast-icon">✨</span>
+    <span id="toast-message">Pesan notifikasi</span>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
