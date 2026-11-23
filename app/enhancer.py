@@ -370,3 +370,5 @@ def run_enhancement_process(
         release_anti_sleep(f"enhance_{job_id}")
         with jobs_lock:
             active_processes.pop(job_id, None)
+
+# Auto sleep-lock protection on upscale tasks
