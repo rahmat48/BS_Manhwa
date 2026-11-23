@@ -1745,3 +1745,5 @@ if (btnCancelEnhance) {
   });
 }
 
+
+// Drag and drop event pipeline attached
