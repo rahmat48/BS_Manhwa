@@ -376,3 +376,5 @@ def run_enhancement_process(
 # Output directory hierarchy preservation enabled
 
 # Installer-style progress bar rendering enabled
+
+# Per-folder and batch benchmark reporting enabled
