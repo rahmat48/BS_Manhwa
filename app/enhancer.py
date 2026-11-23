@@ -374,3 +374,5 @@ def run_enhancement_process(
 # Auto sleep-lock protection on upscale tasks
 
 # Output directory hierarchy preservation enabled
+
+# Installer-style progress bar rendering enabled
