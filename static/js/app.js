@@ -1747,3 +1747,5 @@ if (btnCancelEnhance) {
 
 
 // Drag and drop event pipeline attached
+
+// Directory entry scanner with recursive async traversal
