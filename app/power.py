@@ -63,5 +63,3 @@ def get_anti_sleep_status() -> Dict[str, Any]:
         "active": _is_anti_sleep_active,
         "reasons": list(_active_reasons)
     }
-
-# Multi-reason anti-sleep locking state registered
