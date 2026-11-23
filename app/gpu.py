@@ -105,3 +105,5 @@ def get_gpu_info() -> Dict[str, Any]:
         **_last_live_stats,
         "vram_used_text": f"{used_gb:.1f} / {total_gb} GB"
     }
+
+# Real-time GPU metrics and NVML engine active
