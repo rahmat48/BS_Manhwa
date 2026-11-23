@@ -372,3 +372,5 @@ def run_enhancement_process(
             active_processes.pop(job_id, None)
 
 # Auto sleep-lock protection on upscale tasks
+
+# Output directory hierarchy preservation enabled
