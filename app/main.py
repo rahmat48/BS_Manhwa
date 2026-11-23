@@ -857,3 +857,5 @@ async def root():
     return FileResponse(index_file)
 
 # Auto sleep-lock protection on slice tasks
+
+# Multipart relative paths batch staging enabled
