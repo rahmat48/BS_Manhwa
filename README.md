@@ -8,7 +8,7 @@ Aplikasi web studio lokal yang dirancang khusus untuk pembuat konten **Manhwa Re
 
 ### 1. ✂️ Pemotong Panel Otomatis (Manhwa Slicer)
 - **⚡ Deteksi & Akselerasi GPU Otomatis**:
-  - Otomatis mendeteksi kartu grafis (misal: **NVIDIA GeForce GTX 1650 4GB VRAM**) dengan monitoring beban GPU (`%`) dan VRAM secara *live*.
+  - Otomatis mendeteksi kartu grafis (misal: **NVIDIA GeForce GTX 1650 4GB VRAM**) dengan monitoring beban GPU (`%`), VRAM, serta suhu chip (`°C`) secara *live*.
   - Menggunakan thread paralel berkemampuan tinggi untuk download dan pemotongan berkecepatan tinggi.
 - **📚 Deteksi Seri & Rentang Episode (Batch Chapter)**:
   - Cukup masukkan 1 link chapter, aplikasi otomatis mengenali judul komik dan nomor episode saat ini.
@@ -41,6 +41,22 @@ Aplikasi web studio lokal yang dirancang khusus untuk pembuat konten **Manhwa Re
 
 ---
 
+### 3. 🎙️ Peningkat Kualitas Audio Voiceover AI (Adobe Podcast Style)
+- **🎧 Studio Quality Voice Restoration**:
+  - Membersihkan desis mic, suara bising kipas/ruangan, dan membuang gema ruangan (*dereverberation*) secara otomatis.
+  - Memberikan karakter suara penyiar podcast/radio yang hangat (*vocal body warmth*) dan jernih (*presence air*).
+- **📂 Multi-Audio & Folder Drag & Drop**:
+  - Cukup seret file audio tunggal (`.wav`, `.mp3`, `.m4a`, dll.) atau seluruh folder rekaman episode.
+- **🎛️ 4 Karakter Suara & Slider Intensitas AI**:
+  - **Studio Podcast AI (Adobe Style)**: Pembersihan neural ganda + De-reverb + Studio Warmth EQ + Broadcast Loudness (-15 LUFS).
+  - **Crisp Voiceover**: Artikulasi jernih dan bebas desis mic.
+  - **Broadcast Warmth**: Karakter suara narator tebal dan mantap untuk pembacaan cerita manhwa.
+  - **Smart Clean Polish**: Pembersihan instan 0 detik dengan normalisasi standar YouTube.
+- **🔊 Player Pratinjau Langsung (Before vs After)**:
+  - Putar dan bandingkan langsung audio rekaman asli dengan hasil studio sebelum membuka foldernya.
+
+---
+
 ## 🚀 Cara Menjalankan Aplikasi
 
 ### Cara 1: Menggunakan `run.bat` (Rekomendasi 1-Klik)
@@ -61,18 +77,20 @@ BS_Manhwa/
 ├── app/
 │   ├── main.py          # Backend FastAPI, API endpoints, dan background executor
 │   ├── enhancer.py      # Engine Real-ESRGAN NCNN Vulkan & image upscaling
-│   ├── gpu.py           # Monitoring live pemakaian GPU (%) & VRAM (nvidia-smi)
+│   ├── audio_enhancer.py # Engine Voice AI Studio (RNNoise & Studio DSP Mastering)
+│   ├── gpu.py           # Monitoring live pemakaian GPU (%), VRAM, dan suhu (°C) (nvidia-smi)
 │   ├── power.py         # Pencegah mode sleep (Windows Kernel32 Execution State)
 │   ├── scraper.py       # Scraper & fetcher Shinigami API
 │   └── slicer.py        # Algoritma dynamic panel slicing & celah komik
 ├── static/
-│   ├── index.html       # Web Studio UI (Dark Mode, Tab Slicer/Enhancer, Floating Anti-Sleep)
+│   ├── index.html       # Web Studio UI (Dark Mode, 3 Tab Slicer/Enhancer/Audio)
 │   ├── css/style.css    # Custom Styling
 │   └── js/app.js        # Logic Frontend & interaksi Drag-and-Drop
 ├── tools/
-│   └── realesrgan/      # Binary Real-ESRGAN NCNN Vulkan & model AI weights
+│   ├── realesrgan/      # Binary Real-ESRGAN NCNN Vulkan & model AI weights
+│   └── rnnoise/         # Model neural RNNoise (.rnnn)
 ├── temp_jobs/           # Folder cache kerja sementara
-├── output/              # Folder penyimpanan hasil potong & enhance
+├── output/              # Folder penyimpanan hasil potong, enhance gambar & audio
 ├── requirements.txt     # Dependensi Python
 ├── run_server.py        # Server runner & browser launcher
 ├── run.bat              # Script starter Windows anti force-close

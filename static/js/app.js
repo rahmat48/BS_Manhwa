@@ -22,6 +22,8 @@ const gpuBadge = document.getElementById('gpu-badge');
 const gpuNameLabel = document.getElementById('gpu-name-label');
 const gpuLoadLabel = document.getElementById('gpu-load-label');
 const gpuVramLabel = document.getElementById('gpu-vram-label');
+const gpuTempContainer = document.getElementById('gpu-temp-container');
+const gpuTempLabel = document.getElementById('gpu-temp-label');
 const optUseGpu = document.getElementById('opt-use-gpu');
 const gpuSubtext = document.getElementById('gpu-subtext');
 
@@ -121,6 +123,23 @@ async function checkGpuHardware() {
       if (gpuLoadLabel) gpuLoadLabel.textContent = `${gpu.gpu_util_pct || 0}%`;
       if (gpuVramLabel) gpuVramLabel.textContent = gpu.vram_used_text || `${gpu.vram_used_gb || 0} / ${gpu.vram_gb} GB`;
 
+      if (gpuTempLabel && gpu.temperature_c !== null && gpu.temperature_c !== undefined) {
+        gpuTempLabel.textContent = `${gpu.temperature_c}°C`;
+        if (gpuTempContainer) {
+          gpuTempContainer.classList.remove('hidden');
+          if (gpu.temperature_c >= 80) {
+            gpuTempContainer.className = 'flex items-center gap-1 text-rose-400 font-mono font-bold text-[11px] animate-pulse';
+          } else if (gpu.temperature_c >= 70) {
+            gpuTempContainer.className = 'flex items-center gap-1 text-amber-400 font-mono font-bold text-[11px]';
+          } else {
+            gpuTempContainer.className = 'flex items-center gap-1 text-emerald-400 font-mono font-bold text-[11px]';
+          }
+        }
+      } else if (gpuTempLabel) {
+        // Fallback jika sensor suhu tidak merespons
+        gpuTempLabel.textContent = 'N/A';
+      }
+
       if (gpuSubtext) gpuSubtext.textContent = `Aktif (${gpu.name} - ${gpu.vram_text})`;
       if (optUseGpu) optUseGpu.checked = true;
       if (gpuBadge) gpuBadge.classList.remove('hidden');
@@ -128,6 +147,7 @@ async function checkGpuHardware() {
       if (gpuNameLabel) gpuNameLabel.textContent = 'CPU Mode';
       if (gpuLoadLabel) gpuLoadLabel.textContent = 'CPU';
       if (gpuVramLabel) gpuVramLabel.textContent = 'N/A';
+      if (gpuTempContainer) gpuTempContainer.classList.add('hidden');
       if (gpuSubtext) gpuSubtext.textContent = 'GPU tidak terdeteksi (Fallback CPU)';
       if (optUseGpu) optUseGpu.checked = false;
       if (gpuBadge) gpuBadge.classList.remove('hidden');
@@ -1187,25 +1207,38 @@ function hideError() {
 
 const tabNavSlicer = document.getElementById('tab-nav-slicer');
 const tabNavEnhancer = document.getElementById('tab-nav-enhancer');
+const tabNavAudio = document.getElementById('tab-nav-audio');
 const viewSlicer = document.getElementById('view-slicer');
 const viewEnhancer = document.getElementById('view-enhancer');
+const viewAudio = document.getElementById('view-audio');
 
 function switchView(tab) {
+  // Hide all views first
+  if (viewSlicer) viewSlicer.classList.add('hidden');
+  if (viewEnhancer) viewEnhancer.classList.add('hidden');
+  if (viewAudio) viewAudio.classList.add('hidden');
+
+  // Reset inactive tab styles
+  const inactiveClass = 'tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800';
+  if (tabNavSlicer) tabNavSlicer.className = inactiveClass;
+  if (tabNavEnhancer) tabNavEnhancer.className = inactiveClass;
+  if (tabNavAudio) tabNavAudio.className = inactiveClass;
+
   if (tab === 'slicer') {
-    viewSlicer.classList.remove('hidden');
-    viewEnhancer.classList.add('hidden');
-    tabNavSlicer.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-600 text-white shadow';
-    tabNavEnhancer.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800';
-  } else {
-    viewSlicer.classList.add('hidden');
-    viewEnhancer.classList.remove('hidden');
-    tabNavEnhancer.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/25';
-    tabNavSlicer.className = 'tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800';
+    if (viewSlicer) viewSlicer.classList.remove('hidden');
+    if (tabNavSlicer) tabNavSlicer.className = 'tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-lg shadow-brand-500/20';
+  } else if (tab === 'enhancer') {
+    if (viewEnhancer) viewEnhancer.classList.remove('hidden');
+    if (tabNavEnhancer) tabNavEnhancer.className = 'tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/25';
+  } else if (tab === 'audio') {
+    if (viewAudio) viewAudio.classList.remove('hidden');
+    if (tabNavAudio) tabNavAudio.className = 'tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/25';
   }
 }
 
 if (tabNavSlicer) tabNavSlicer.addEventListener('click', () => switchView('slicer'));
 if (tabNavEnhancer) tabNavEnhancer.addEventListener('click', () => switchView('enhancer'));
+if (tabNavAudio) tabNavAudio.addEventListener('click', () => switchView('audio'));
 
 // Enhancer Elements
 const enhancerDropzone = document.getElementById('enhancer-dropzone');
@@ -1744,4 +1777,523 @@ if (btnCancelEnhance) {
     }
   });
 }
+
+// ==========================================
+// AUDIO ENHANCER (VOICE AI STUDIO) LOGIC
+// ==========================================
+
+const audioDropzone = document.getElementById('audio-dropzone');
+const audioFileInput = document.getElementById('audio-file-input');
+const audioSingleFileInput = document.getElementById('audio-single-file-input');
+const btnBrowseAudioFiles = document.getElementById('btn-browse-audio-files');
+const btnBrowseAudioFolders = document.getElementById('btn-browse-audio-folders');
+const btnBrowseAudioModal = document.getElementById('btn-browse-audio-modal');
+const audioFoldersCard = document.getElementById('audio-folders-card');
+const audioSummaryText = document.getElementById('audio-summary-text');
+const audioFolderChipsContainer = document.getElementById('audio-folder-chips-container');
+const btnClearAudioFolders = document.getElementById('btn-clear-audio-folders');
+
+const audioTargetFolder = document.getElementById('audio-target-folder');
+const btnBrowseAudioTarget = document.getElementById('btn-browse-audio-target');
+const btnPresetAudioDefault = document.getElementById('btn-preset-audio-default');
+const btnPresetAudioVoiceover = document.getElementById('btn-preset-audio-voiceover');
+const btnPresetAudioDesktop = document.getElementById('btn-preset-audio-desktop');
+
+const audioModeCards = document.querySelectorAll('.audio-mode-card');
+const audioStrengthSlider = document.getElementById('audio-strength-slider');
+const audioStrengthNum = document.getElementById('audio-strength-num');
+const audioStrengthLabel = document.getElementById('audio-strength-label');
+const btnStartAudio = document.getElementById('btn-start-audio');
+const btnStartAudioLabel = document.getElementById('btn-start-audio-label');
+
+const audioProgressCard = document.getElementById('audio-progress-card');
+const audioProgressTitle = document.getElementById('audio-progress-title');
+const audioProgressSubtitle = document.getElementById('audio-progress-subtitle');
+const audioProgressPct = document.getElementById('audio-progress-pct');
+const audioProgressBarFill = document.getElementById('audio-progress-bar-fill');
+const btnCancelAudio = document.getElementById('btn-cancel-audio');
+
+const audioSuccessCard = document.getElementById('audio-success-card');
+const audioSuccessCount = document.getElementById('audio-success-count');
+const audioSuccessPath = document.getElementById('audio-success-path');
+const btnOpenAudioFolder = document.getElementById('btn-open-audio-folder');
+const audioPreviewContainer = document.getElementById('audio-preview-container');
+const audioPlayerBefore = document.getElementById('audio-player-before');
+const audioPlayerAfter = document.getElementById('audio-player-after');
+
+// State
+let selectedAudioFolders = new Map(); // path -> { folder_name, folder_path, audio_count }
+let currentAudioJobId = null;
+let audioPollInterval = null;
+
+const AUDIO_EXT_REGEX = /\.(wav|mp3|m4a|aac|flac|ogg|wma|opus|aiff)$/i;
+
+if (audioTargetFolder) {
+  audioTargetFolder.value = 'D:\\CODING\\Manhwa Recap\\output\\Audio_Enhanced';
+}
+
+if (btnPresetAudioDefault) {
+  btnPresetAudioDefault.addEventListener('click', () => {
+    audioTargetFolder.value = 'D:\\CODING\\Manhwa Recap\\output\\Audio_Enhanced';
+    showToast('Folder tujuan audio diset ke output/Audio_Enhanced', '📁');
+  });
+}
+
+if (btnPresetAudioVoiceover) {
+  btnPresetAudioVoiceover.addEventListener('click', () => {
+    audioTargetFolder.value = 'D:\\Voiceover_Studio';
+    showToast('Folder tujuan audio diset ke D:\\Voiceover_Studio', '📁');
+  });
+}
+
+if (btnPresetAudioDesktop) {
+  btnPresetAudioDesktop.addEventListener('click', () => {
+    if (defaultFolders.desktop) {
+      audioTargetFolder.value = `${defaultFolders.desktop}\\Voiceover_Enhanced`;
+      showToast('Folder tujuan audio diset ke Desktop', '🖥️');
+    }
+  });
+}
+
+// Mode Selection Cards
+audioModeCards.forEach(card => {
+  card.addEventListener('click', () => {
+    audioModeCards.forEach(c => {
+      c.classList.remove('active', 'border-amber-500/50', 'ring-1', 'ring-amber-500/30', 'bg-slate-900/80');
+      c.classList.add('border-slate-800', 'bg-slate-900/60');
+      const radio = c.querySelector('input[type="radio"]');
+      if (radio) radio.checked = false;
+    });
+
+    card.classList.add('active', 'border-amber-500/50', 'ring-1', 'ring-amber-500/30', 'bg-slate-900/80');
+    card.classList.remove('border-slate-800', 'bg-slate-900/60');
+    const r = card.querySelector('input[type="radio"]');
+    if (r) r.checked = true;
+  });
+});
+
+// Slider Strength Controller
+if (audioStrengthSlider) {
+  audioStrengthSlider.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (audioStrengthNum) audioStrengthNum.textContent = `${val}%`;
+    if (audioStrengthLabel) {
+      let desc = 'Studio Balance';
+      if (val >= 90) desc = 'Aggressive Denoise';
+      else if (val <= 65) desc = 'Gentle Clean';
+      audioStrengthLabel.textContent = `${val}% (${desc})`;
+    }
+  });
+}
+
+// Render Folder/Audio Chips
+function renderAudioFolderChips() {
+  if (selectedAudioFolders.size === 0) {
+    audioFoldersCard.classList.add('hidden');
+    btnStartAudioLabel.textContent = 'Mulai Tingkatkan Audio';
+    return;
+  }
+
+  audioFoldersCard.classList.remove('hidden');
+  audioFolderChipsContainer.innerHTML = '';
+
+  let totalAuds = 0;
+  selectedAudioFolders.forEach((f, p) => {
+    totalAuds += f.audio_count;
+    const chip = document.createElement('div');
+    chip.className = 'flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs text-slate-200 group';
+    chip.innerHTML = `
+      <span class="text-amber-400">🎙️</span>
+      <span class="font-bold text-white">${f.folder_name}</span>
+      <span class="text-[11px] text-amber-300 font-mono">(${f.audio_count} audio)</span>
+      <button type="button" class="ml-1 text-slate-400 hover:text-rose-400 p-0.5 rounded transition" title="Hapus audio/folder ini">
+        ✕
+      </button>
+    `;
+    chip.querySelector('button').onclick = (e) => {
+      e.stopPropagation();
+      selectedAudioFolders.delete(p);
+      renderAudioFolderChips();
+    };
+    audioFolderChipsContainer.appendChild(chip);
+  });
+
+  audioSummaryText.textContent = `${selectedAudioFolders.size} Folder/Item • ${totalAuds} Total Audio`;
+  btnStartAudioLabel.textContent = `🎙️ Mulai Tingkatkan ${totalAuds} File Audio (${selectedAudioFolders.size} Folder)`;
+}
+
+// Add and Scan Audio Folders
+async function scanAndAddAudioFolders(paths) {
+  if (!paths || paths.length === 0) return;
+  try {
+    const res = await fetch('/api/audio/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_paths: paths })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Gagal memindai audio.');
+    }
+
+    const data = await res.json();
+    if (data.folders.length === 0) {
+      showToast('Tidak ada file audio (.wav, .mp3, .m4a, dll) di lokasi tersebut.', '⚠️');
+      return;
+    }
+
+    data.folders.forEach(f => {
+      selectedAudioFolders.set(f.folder_path, f);
+    });
+
+    renderAudioFolderChips();
+    showToast(`Berhasil menambahkan ${data.folders.length} folder/item (${data.total_audio_files} audio)`, '🎙️');
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// Browse Audio Files using system input
+if (btnBrowseAudioFiles) {
+  btnBrowseAudioFiles.addEventListener('click', () => {
+    if (audioSingleFileInput) audioSingleFileInput.click();
+  });
+}
+
+// Browse Audio Folders using system input
+if (btnBrowseAudioFolders) {
+  btnBrowseAudioFolders.addEventListener('click', () => {
+    if (audioFileInput) audioFileInput.click();
+  });
+}
+
+// Extract Audio Files from DataTransfer (handles folders & pagination)
+async function extractAudioFilesFromDataTransfer(dataTransfer) {
+  const items = dataTransfer.items;
+  const files = [];
+
+  const readAllDirEntries = async (dirReader) => {
+    const entries = [];
+    let batch;
+    do {
+      batch = await new Promise((resolve) => {
+        dirReader.readEntries((results) => resolve(results || []), () => resolve([]));
+      });
+      if (batch && batch.length > 0) {
+        entries.push(...batch);
+      }
+    } while (batch && batch.length > 0);
+    return entries;
+  };
+
+  const traverseEntry = async (entry, currentFolder = '') => {
+    if (!entry) return;
+    if (entry.isFile) {
+      try {
+        const file = await new Promise((resolve, reject) => {
+          entry.file(resolve, reject);
+        });
+        if (file && (file.type.startsWith('audio/') || AUDIO_EXT_REGEX.test(file.name))) {
+          file.targetFolder = currentFolder || 'Audio_Tunggal';
+          files.push(file);
+        }
+      } catch (e) {
+        console.warn('Gagal membaca audio dari entry:', entry.name, e);
+      }
+    } else if (entry.isDirectory) {
+      const folderName = currentFolder ? `${currentFolder}/${entry.name}` : entry.name;
+      const dirReader = entry.createReader();
+      const subEntries = await readAllDirEntries(dirReader);
+      for (const sub of subEntries) {
+        await traverseEntry(sub, folderName);
+      }
+    }
+  };
+
+  if (items && items.length > 0 && items[0].webkitGetAsEntry) {
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry();
+      if (entry) {
+        await traverseEntry(entry);
+      }
+    }
+  } else if (dataTransfer.files && dataTransfer.files.length > 0) {
+    for (let i = 0; i < dataTransfer.files.length; i++) {
+      const f = dataTransfer.files[i];
+      if (f.type.startsWith('audio/') || AUDIO_EXT_REGEX.test(f.name)) {
+        f.targetFolder = 'Audio_Tunggal';
+        files.push(f);
+      }
+    }
+  }
+
+  return files;
+}
+
+// Upload Audio Files to staging area
+async function uploadAudioFiles(files) {
+  if (!files || files.length === 0) {
+    showToast('Tidak ada file audio (.wav, .mp3, .m4a) yang ditemukan.', '⚠️');
+    return;
+  }
+
+  const formData = new FormData();
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    formData.append('files', f);
+    formData.append('folders', f.targetFolder || 'Audio_Tunggal');
+  }
+
+  try {
+    const totalCount = files.length;
+    showToast(`Mengunggah & menganalisis ${totalCount} audio...`, '📤');
+
+    const res = await fetch('/api/audio/upload-files', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Gagal memproses file audio yang diunggah.');
+    }
+
+    const data = await res.json();
+    data.folders.forEach(f => {
+      selectedAudioFolders.set(f.folder_path, {
+        folder_name: f.folder_name,
+        folder_path: f.folder_path,
+        audio_count: f.audio_count
+      });
+    });
+
+    renderAudioFolderChips();
+    showToast(`Berhasil menambahkan ${data.total_audio_files} audio ke antrean!`, '🎙️');
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+// Audio Dropzone Drag and Drop Listeners
+if (audioDropzone) {
+  ['dragenter', 'dragover'].forEach(eventName => {
+    audioDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      audioDropzone.classList.add('border-amber-500', 'bg-amber-500/10', 'ring-2', 'ring-amber-500/30');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    audioDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      audioDropzone.classList.remove('border-amber-500', 'bg-amber-500/10', 'ring-2', 'ring-amber-500/30');
+    });
+  });
+
+  audioDropzone.addEventListener('drop', async (e) => {
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const files = await extractAudioFilesFromDataTransfer(dt);
+    if (files.length > 0) {
+      await uploadAudioFiles(files);
+    } else {
+      showToast('Tidak ada file audio yang dikenali.', '⚠️');
+    }
+  });
+
+  // Clicking dropzone outside buttons opens single file picker
+  audioDropzone.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (audioSingleFileInput) audioSingleFileInput.click();
+  });
+}
+
+// Folder input change listener
+if (audioFileInput) {
+  audioFileInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/') || AUDIO_EXT_REGEX.test(f.name));
+    files.forEach(f => {
+      const rel = f.webkitRelativePath || '';
+      const parts = rel.split('/');
+      f.targetFolder = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Audio_Tunggal';
+    });
+    if (files.length > 0) {
+      await uploadAudioFiles(files);
+    }
+    audioFileInput.value = '';
+  });
+}
+
+// Single file input change listener
+if (audioSingleFileInput) {
+  audioSingleFileInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith('audio/') || AUDIO_EXT_REGEX.test(f.name));
+    files.forEach(f => { f.targetFolder = 'Audio_Tunggal'; });
+    if (files.length > 0) {
+      await uploadAudioFiles(files);
+    }
+    audioSingleFileInput.value = '';
+  });
+}
+
+// In-App Explorer Modal for Audio Source
+if (btnBrowseAudioModal) {
+  btnBrowseAudioModal.addEventListener('click', () => {
+    activePickerCallback = (folderPath) => {
+      scanAndAddAudioFolders([folderPath]);
+    };
+    openFolderPickerModal(audioTargetFolder ? audioTargetFolder.value : '');
+  });
+}
+
+// In-App Explorer Modal for Audio Target
+if (btnBrowseAudioTarget) {
+  btnBrowseAudioTarget.addEventListener('click', () => {
+    activePickerCallback = (folderPath) => {
+      audioTargetFolder.value = folderPath;
+      showToast(`Folder tujuan audio diset ke: ${folderPath}`, '📁');
+    };
+    openFolderPickerModal(audioTargetFolder ? audioTargetFolder.value : '');
+  });
+}
+
+// Clear all audio folders
+if (btnClearAudioFolders) {
+  btnClearAudioFolders.addEventListener('click', () => {
+    selectedAudioFolders.clear();
+    renderAudioFolderChips();
+    showToast('Daftar audio dibersihkan.', '🧹');
+  });
+}
+
+// Start Audio Enhancement
+if (btnStartAudio) {
+  btnStartAudio.addEventListener('click', async () => {
+    if (selectedAudioFolders.size === 0) {
+      showToast('Pilih setidaknya 1 file atau folder audio terlebih dahulu.', '⚠️');
+      return;
+    }
+
+    const folderPaths = Array.from(selectedAudioFolders.keys());
+    const selectedModeEl = document.querySelector('input[name="audio-mode"]:checked');
+    const mode = selectedModeEl ? selectedModeEl.value : 'studio-podcast';
+    const strength = audioStrengthSlider ? parseInt(audioStrengthSlider.value, 10) : 85;
+    const targetFolder = audioTargetFolder ? audioTargetFolder.value.trim() : '';
+
+    try {
+      btnStartAudio.disabled = true;
+      audioSuccessCard.classList.add('hidden');
+      if (audioPreviewContainer) audioPreviewContainer.classList.add('hidden');
+      audioProgressCard.classList.remove('hidden');
+      audioProgressPct.textContent = '1%';
+      audioProgressBarFill.style.width = '1%';
+      audioProgressTitle.textContent = 'Menyiapkan DSP Audio...';
+      audioProgressSubtitle.textContent = 'Memulai proses peningkatan vokal AI';
+
+      const res = await fetch('/api/audio/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folder_paths: folderPaths,
+          target_folder: targetFolder || null,
+          mode: mode,
+          strength: strength
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Gagal memulai proses enhance audio.');
+      }
+
+      const data = await res.json();
+      currentAudioJobId = data.job_id;
+      pollAudioProgress(currentAudioJobId);
+
+    } catch (err) {
+      audioProgressCard.classList.add('hidden');
+      btnStartAudio.disabled = false;
+      showError(err.message);
+    }
+  });
+}
+
+// Polling Progress for Audio Enhancement
+function pollAudioProgress(jobId) {
+  if (audioPollInterval) clearInterval(audioPollInterval);
+
+  audioPollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/audio/status/${jobId}`);
+      if (!res.ok) throw new Error('Gagal mengambil status audio.');
+      const data = await res.json();
+
+      audioProgressPct.textContent = `${data.progress || 0}%`;
+      audioProgressBarFill.style.width = `${data.progress || 0}%`;
+      audioProgressSubtitle.textContent = data.message || 'Sedang memproses audio...';
+
+      if (data.status === 'completed') {
+        clearInterval(audioPollInterval);
+        audioProgressCard.classList.add('hidden');
+        btnStartAudio.disabled = false;
+
+        audioSuccessCard.classList.remove('hidden');
+        audioSuccessCount.textContent = `${data.processed_audio || 0} File Audio berhasil ditingkatkan`;
+        audioSuccessPath.textContent = data.output_folder || audioTargetFolder.value;
+
+        showToast(`Selesai! ${data.processed_audio} file audio berhasil di-enhance.`, '🎉');
+
+        if (btnOpenAudioFolder) {
+          btnOpenAudioFolder.onclick = async () => {
+            await fetch('/api/open-folder', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: data.output_folder })
+            });
+          };
+        }
+
+        // Setup Before vs After Audio Player Preview
+        if (data.has_preview && audioPreviewContainer && audioPlayerBefore && audioPlayerAfter) {
+          audioPlayerBefore.src = `/api/audio/preview/${jobId}/before?t=${Date.now()}`;
+          audioPlayerAfter.src = `/api/audio/preview/${jobId}/after?t=${Date.now()}`;
+          audioPreviewContainer.classList.remove('hidden');
+        }
+
+      } else if (data.status === 'failed' || data.status === 'cancelled') {
+        clearInterval(audioPollInterval);
+        audioProgressCard.classList.add('hidden');
+        btnStartAudio.disabled = false;
+        if (data.status === 'failed') {
+          showError(data.error || data.message || 'Proses audio gagal.');
+        } else {
+          showToast('Proses audio dibatalkan.', '⏹️');
+        }
+      }
+
+    } catch (err) {
+      clearInterval(audioPollInterval);
+      audioProgressCard.classList.add('hidden');
+      btnStartAudio.disabled = false;
+      showError(err.message);
+    }
+  }, 600);
+}
+
+// Cancel Audio Job
+if (btnCancelAudio) {
+  btnCancelAudio.addEventListener('click', async () => {
+    if (!currentAudioJobId) return;
+    try {
+      await fetch(`/api/audio/cancel/${currentAudioJobId}`, { method: 'POST' });
+      showToast('Membatalkan proses audio...', '⏹️');
+    } catch (err) {
+      console.warn('Gagal membatalkan audio:', err);
+    }
+  });
+}
+
 

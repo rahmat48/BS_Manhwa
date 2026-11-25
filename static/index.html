@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5.0">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -47,22 +47,9 @@
             <span class="text-slate-100 font-bold">Manhwa Recap Slicer</span>
             <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/30">Studio</span>
           </h1>
-          <p class="text-xs text-slate-400">Potong panel komik otomatis & tata rapi per folder episode</p>
+          <p class="text-xs text-slate-400">Studio Pemotong Panel, Enhancer Gambar 4K & Audio Voiceover</p>
         </div>
       </div>
-
-      <!-- Navigation Tabs (Slicer vs Enhancer) -->
-      <nav class="hidden md:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
-        <button type="button" id="tab-nav-slicer" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-brand-600 text-white shadow">
-          <span>✂️</span>
-          <span>Potong Panel</span>
-        </button>
-        <button type="button" id="tab-nav-enhancer" class="tab-btn px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white hover:bg-slate-800">
-          <span>✨</span>
-          <span>Enhance Gambar (AI)</span>
-          <span class="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-extrabold border border-red-500/30">Baru</span>
-        </button>
-      </nav>
       
       <!-- GPU Live Utilization & Status Badges -->
       <div class="flex items-center space-x-2.5 text-xs">
@@ -81,6 +68,11 @@
             <span class="text-slate-500 font-sans">VRAM:</span>
             <span id="gpu-vram-label" class="font-semibold text-slate-200">0.3 / 4.0 GB</span>
           </div>
+          <span class="text-slate-700">|</span>
+          <div id="gpu-temp-container" class="flex items-center gap-1 text-emerald-400 font-mono font-bold text-[11px]" title="Suhu Chip GPU (°C)">
+            <span>🌡️</span>
+            <span id="gpu-temp-label">--°C</span>
+          </div>
         </div>
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
           <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -89,6 +81,32 @@
       </div>
     </div>
   </header>
+
+  <!-- Studio Sub-Navigation Bar (Rapi Tepat di Bawah Navbar) -->
+  <div class="border-b border-slate-800/80 bg-[#0d1322]/85 backdrop-blur sticky top-16 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-4 overflow-x-auto">
+      <nav class="flex items-center gap-2">
+        <button type="button" id="tab-nav-slicer" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-lg shadow-brand-500/20">
+          <span>✂️</span>
+          <span>Potong Panel (Slicer)</span>
+        </button>
+        <button type="button" id="tab-nav-enhancer" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800">
+          <span>✨</span>
+          <span>Enhance Gambar (AI)</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-extrabold border border-red-500/30">2K/4K</span>
+        </button>
+        <button type="button" id="tab-nav-audio" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 text-slate-400 hover:text-white hover:bg-slate-800">
+          <span>🎙️</span>
+          <span>Enhance Audio (Voice AI)</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">Adobe Quality</span>
+        </button>
+      </nav>
+      <div class="hidden lg:flex items-center gap-2 text-[11px] text-slate-400">
+        <span>Studio Produksi:</span>
+        <span class="text-slate-200 font-semibold">Komik & Voiceover Manhwa Recap</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Main Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
@@ -739,6 +757,294 @@
     </div>
     <!-- End View 2: Image Enhancer -->
 
+    <!-- View 3: Audio Enhancer (Voice AI Studio - Adobe Podcast Style) -->
+    <div id="view-audio" class="hidden space-y-8">
+      
+      <!-- Audio Enhancer Hero & Drag-and-Drop Dropzone -->
+      <section class="bg-gradient-to-b from-[#131b2e] to-[#0f172a] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden space-y-6">
+        <div class="absolute -top-24 -right-24 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">Voice AI Studio</span>
+            <span class="text-xs text-slate-400">Neural Denoise & Broadcast Mastering (Adobe Podcast Style)</span>
+          </div>
+          <h2 class="text-xl font-extrabold text-white">Tingkatkan Kejernihan & Kualitas Voiceover Narasi</h2>
+          <p class="text-xs text-slate-400 mt-1">Seret rekaman suara, file audio, atau folder voiceover. AI otomatis membersihkan desis mic, gema ruangan, dan menaikkan kejernihan vokal setara studio rekaman.</p>
+        </div>
+
+        <!-- Big Drag & Drop Zone -->
+        <div id="audio-dropzone" class="border-2 border-dashed border-slate-700 hover:border-amber-500/80 bg-slate-900/60 hover:bg-slate-900/90 rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer group relative">
+          <input type="file" id="audio-file-input" webkitdirectory directory multiple class="hidden">
+          <input type="file" id="audio-single-file-input" multiple accept="audio/*,.wav,.mp3,.m4a,.aac,.flac,.ogg,.wma,.opus,.aiff" class="hidden">
+          
+          <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto text-3xl mb-3 group-hover:scale-110 transition border border-amber-500/20 shadow-lg shadow-amber-500/10">
+            🎙️
+          </div>
+          <h3 class="text-base font-bold text-white mb-1">
+            Seret & Lepas File Audio atau Folder ke Sini
+          </h3>
+          <p class="text-xs text-slate-400 max-w-md mx-auto mb-4">
+            Bisa <strong>1 file voiceover</strong> (.wav, .mp3, .m4a), beberapa rekaman sekaligus, atau seluruh <strong>folder narasi episode</strong>.
+          </p>
+
+          <div class="flex items-center justify-center gap-2.5 flex-wrap">
+            <button type="button" id="btn-browse-audio-files" class="px-3.5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-600/25 flex items-center gap-1.5 transition">
+              <span>🎙️</span>
+              <span>Pilih File Audio...</span>
+            </button>
+            <button type="button" id="btn-browse-audio-folders" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center gap-1.5 transition">
+              <span>📁</span>
+              <span>Pilih Folder Audio...</span>
+            </button>
+          </div>
+          <div class="mt-3 text-[11px] text-slate-500">
+            <span>Atau ingin pilih folder lokal tanpa upload? </span>
+            <button type="button" id="btn-browse-audio-modal" class="text-slate-400 hover:text-amber-400 underline transition">Jelajahi Drive (Explorer)</button>
+          </div>
+        </div>
+
+        <!-- Detected Folders List & Chips -->
+        <div id="audio-folders-card" class="hidden bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">File & Folder Terpilih:</span>
+              <span class="text-xs font-mono text-amber-400 font-bold" id="audio-summary-text">0 Folder • 0 Audio</span>
+            </div>
+            <button type="button" id="btn-clear-audio-folders" class="text-[11px] text-slate-400 hover:text-rose-400 transition">
+              Bersihkan Semua
+            </button>
+          </div>
+          <div id="audio-folder-chips-container" class="flex items-center gap-2 flex-wrap">
+            <!-- Chips injected dynamically -->
+          </div>
+        </div>
+
+        <!-- Target Output Selection -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-200">
+              📂 Folder Tujuan Simpan Hasil Audio
+            </label>
+            <span class="text-[11px] text-emerald-400 font-medium">Struktur subfolder otomatis disesuaikan dengan folder asal</span>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              id="audio-target-folder"
+              placeholder="D:\CODING\Manhwa Recap\output\Audio_Enhanced"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-amber-500"
+            />
+            <button
+              type="button"
+              id="btn-browse-audio-target"
+              class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 shrink-0 transition"
+            >
+              📁 Pilih Folder Sendiri...
+            </button>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+            <span>Shortcut Cepat:</span>
+            <button type="button" id="btn-preset-audio-default" class="hover:text-amber-400 transition underline">Default (output/Audio_Enhanced)</button>
+            <span>•</span>
+            <button type="button" id="btn-preset-audio-voiceover" class="hover:text-amber-400 transition underline">D:\Voiceover_Studio</button>
+            <span>•</span>
+            <button type="button" id="btn-preset-audio-desktop" class="hover:text-amber-400 transition underline">🖥️ Desktop</button>
+          </div>
+        </div>
+
+        <!-- Enhance Mode Options -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Pilih Karakter Suara:
+            </label>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">Intensitas AI:</span>
+              <span id="audio-strength-label" class="text-xs font-mono font-bold text-amber-400">85% (Studio Balance)</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs" id="audio-models-grid">
+            
+            <!-- Option 1: Studio Podcast AI -->
+            <label class="audio-mode-card active bg-slate-900/80 p-3.5 rounded-xl border border-amber-500/50 flex flex-col justify-between cursor-pointer hover:border-amber-500 transition ring-1 ring-amber-500/30">
+              <input type="radio" name="audio-mode" value="studio-podcast" checked class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">🎙️ Studio Podcast AI</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-extrabold border border-amber-500/30">Adobe Style</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Dual-stage neural denoise, de-reverb, de-esser, vokal hangat & broadcast loudness (-15 LUFS).</p>
+              </div>
+            </label>
+
+            <!-- Option 2: Crisp Voiceover -->
+            <label class="audio-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="audio-mode" value="crisp-voiceover" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">⚡ Crisp Voiceover</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-extrabold border border-blue-500/30">Jernih</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Pembersihan desis mic & background noise dengan artikulasi suara yang tajam dan transparan.</p>
+              </div>
+            </label>
+
+            <!-- Option 3: Broadcast Warmth -->
+            <label class="audio-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="audio-mode" value="broadcast-warmth" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">📻 Broadcast Warmth</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-extrabold border border-purple-500/30">Tebal</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Karakter suara narator tebal, bass dada hangat, dan kompresi dinamika pas untuk cerita manhwa.</p>
+              </div>
+            </label>
+
+            <!-- Option 4: Smart Audio Polish -->
+            <label class="audio-mode-card bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between cursor-pointer hover:border-slate-700 transition">
+              <input type="radio" name="audio-mode" value="smart-polish" class="hidden">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="font-bold text-white flex items-center gap-1.5">🪄 Smart Clean Polish</span>
+                  <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-extrabold border border-emerald-500/30">0 Detik</span>
+                </div>
+                <p class="text-[11px] text-slate-400">De-hum 50/60Hz, adaptive noise gate, dan normalisasi EBU R128 standar YouTube.</p>
+              </div>
+            </label>
+
+          </div>
+
+          <!-- Slider Intensitas AI -->
+          <div class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex items-center gap-4">
+            <span class="text-xs text-slate-400 font-semibold shrink-0">Intensitas Pembersihan:</span>
+            <input
+              type="range"
+              id="audio-strength-slider"
+              min="50"
+              max="100"
+              value="85"
+              class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            />
+            <span class="text-xs font-mono text-slate-300 shrink-0" id="audio-strength-num">85%</span>
+          </div>
+        </div>
+
+        <!-- Start Enhance Audio Button -->
+        <div class="pt-2">
+          <button
+            type="button"
+            id="btn-start-audio"
+            class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 font-bold text-sm rounded-xl shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition duration-200"
+          >
+            <span>🎙️</span>
+            <span id="btn-start-audio-label">Mulai Tingkatkan Audio</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- Audio Progress Card -->
+      <section id="audio-progress-card" class="hidden bg-[#131b2e] border border-amber-500/40 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center animate-spin">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-sm text-white" id="audio-progress-title">Sedang Meningkatkan Kualitas Audio...</h3>
+              <p class="text-xs text-slate-400 font-mono" id="audio-progress-subtitle">Memproses rekaman voiceover</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-lg font-bold text-amber-400" id="audio-progress-pct">0%</span>
+            <button type="button" id="btn-cancel-audio" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 rounded-lg text-xs font-semibold border border-slate-700 transition">
+              ⏹️ Batalkan
+            </button>
+          </div>
+        </div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+          <div id="audio-progress-bar-fill" class="bg-gradient-to-r from-amber-600 via-orange-500 to-rose-500 h-full w-0 transition-all duration-200 rounded-full"></div>
+        </div>
+      </section>
+
+      <!-- Audio Success Card & Audio Player Preview -->
+      <div id="audio-success-card" class="hidden space-y-4">
+        <div class="bg-gradient-to-r from-amber-950/70 to-slate-900 border border-amber-500/40 rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl shrink-0 border border-amber-500/30">
+              🎉
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">Enhance Audio Selesai</span>
+                <span class="text-xs text-slate-400" id="audio-success-count">0 File Audio diproses</span>
+              </div>
+              <h3 class="text-sm font-bold text-white mt-1">
+                Tersimpan rapi di: <span class="font-mono text-amber-300 font-normal text-xs" id="audio-success-path">D:\...</span>
+              </h3>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              id="btn-open-audio-folder"
+              class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 font-bold text-xs rounded-xl text-white shadow-lg shadow-amber-600/30 flex items-center gap-2 transition"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z"/></svg>
+              Buka Folder di File Explorer
+            </button>
+          </div>
+        </div>
+
+        <!-- Before & After Audio Comparison Player -->
+        <div id="audio-preview-container" class="hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🎧</span>
+              <h4 class="text-sm font-bold text-white">Dengarkan Perbandingan Hasil (Before vs After)</h4>
+            </div>
+            <span class="text-[11px] text-amber-400 font-medium">Pratinjau 30 Detik</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Before Audio Player -->
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                  Audio Asli (Sebelum)
+                </span>
+                <span class="text-[10px] text-slate-500 font-mono">Original</span>
+              </div>
+              <audio id="audio-player-before" controls class="w-full h-10 rounded-lg"></audio>
+            </div>
+
+            <!-- After Audio Player -->
+            <div class="bg-slate-950/70 border border-amber-500/30 rounded-xl p-4 space-y-2 ring-1 ring-amber-500/20">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  Studio Enhanced (Sesudah)
+                </span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">Studio Master</span>
+              </div>
+              <audio id="audio-player-after" controls class="w-full h-10 rounded-lg"></audio>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    <!-- End View 3: Audio Enhancer -->
+
   </main>
 
   <!-- In-App Folder Explorer Modal -->
@@ -862,6 +1168,6 @@
     <span id="toast-message">Pesan notifikasi</span>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/app.js?v=2.5.0"></script>
 </body>
 </html>

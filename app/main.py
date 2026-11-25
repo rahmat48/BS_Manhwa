@@ -31,6 +31,17 @@ from app.enhancer import (
     enhancement_jobs,
     active_processes
 )
+from app.audio_enhancer import (
+    get_audio_enhancer_status,
+    scan_input_audio,
+    run_audio_enhancement_process,
+    audio_jobs,
+    active_audio_processes,
+    DEFAULT_AUDIO_OUTPUT,
+    AUDIO_UPLOADS_DIR,
+    PREVIEW_DIR,
+    AUDIO_EXTENSIONS
+)
 from app.power import (
     acquire_anti_sleep,
     release_anti_sleep,
@@ -56,12 +67,24 @@ class EndpointFilter(logging.Filter):
             "/api/cache-info",
             "/api/status/",
             "/api/enhancer/status/",
+            "/api/audio/status/",
             "/api/gpu-info",
             "/api/default-folders",
             "/api/anti-sleep/status"
         ))
 
 logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+
+# Middleware Anti-Cache untuk file statis & index selama mode development
+@app.middleware("http")
+async def add_no_cache_headers(request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # High-concurrency thread pool for GPU/CPU acceleration
 executor = ThreadPoolExecutor(max_workers=8)
@@ -165,6 +188,17 @@ class EnhanceStartRequest(BaseModel):
     target_folder: Optional[str] = None
     model_name: str = "realesrgan-x4plus-anime"
     scale: int = 2
+    open_folder_after: bool = True
+
+class AudioScanRequest(BaseModel):
+    folder_paths: List[str]
+
+class AudioStartRequest(BaseModel):
+    folder_paths: List[str]
+    target_folder: Optional[str] = None
+    mode: str = "studio-podcast"
+    strength: int = 85
+    output_format: str = "auto"
     open_folder_after: bool = True
 
 def get_system_drives() -> List[str]:
@@ -848,6 +882,150 @@ async def api_enhancer_upload_files(
         "total_images": total_imgs,
         "total_folders": len(folder_map)
     }
+
+# ==========================================
+# AUDIO ENHANCER (VOICE AI STUDIO) ENDPOINTS
+# ==========================================
+
+@app.get("/api/audio/info")
+async def api_audio_info():
+    return get_audio_enhancer_status()
+
+@app.post("/api/audio/scan")
+async def api_audio_scan(req: AudioScanRequest):
+    if not req.folder_paths:
+        raise HTTPException(status_code=400, detail="Daftar folder audio kosong.")
+    res = scan_input_audio(req.folder_paths)
+    return res
+
+@app.post("/api/audio/upload-files")
+async def api_audio_upload_files(
+    files: List[UploadFile] = File(...),
+    folders: Optional[List[str]] = Form(None)
+):
+    if not files:
+        raise HTTPException(status_code=400, detail="Tidak ada file audio yang diunggah.")
+
+    batch_id = uuid.uuid4().hex[:8]
+    batch_dir = os.path.join(AUDIO_UPLOADS_DIR, batch_id)
+    os.makedirs(batch_dir, exist_ok=True)
+
+    folder_map: Dict[str, Dict[str, Any]] = {}
+
+    for idx, f in enumerate(files):
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext not in AUDIO_EXTENSIONS:
+            continue
+
+        raw_folder = "Audio_Tunggal"
+        if folders and idx < len(folders) and folders[idx]:
+            raw_folder = folders[idx]
+
+        parts = [p.strip() for p in raw_folder.replace("\\", "/").split("/") if p.strip() and p.strip() != ".."]
+        clean_parts = ["".join(c for c in part if c.isalnum() or c in " ._-()[]").strip() for part in parts]
+        clean_parts = [p for p in clean_parts if p]
+
+        folder_rel_path = os.path.join(*clean_parts) if clean_parts else "Audio_Tunggal"
+        folder_display_name = " / ".join(clean_parts) if clean_parts else "Audio_Tunggal"
+        target_dir = os.path.join(batch_dir, *clean_parts) if clean_parts else os.path.join(batch_dir, "Audio_Tunggal")
+        os.makedirs(target_dir, exist_ok=True)
+
+        clean_name = os.path.basename(f.filename)
+        dest_path = os.path.join(target_dir, clean_name)
+        with open(dest_path, "wb") as out_f:
+            shutil.copyfileobj(f.file, out_f)
+
+        folder_key = os.path.abspath(target_dir)
+        if folder_key not in folder_map:
+            folder_map[folder_key] = {
+                "folder_name": folder_display_name,
+                "rel_path": folder_rel_path,
+                "folder_path": folder_key,
+                "audio_count": 0
+            }
+        folder_map[folder_key]["audio_count"] += 1
+
+    if not folder_map:
+        raise HTTPException(status_code=400, detail="File yang diunggah bukan format audio yang didukung (.wav, .mp3, .m4a, dll).")
+
+    total_auds = sum(f["audio_count"] for f in folder_map.values())
+    return {
+        "status": "success",
+        "batch_id": batch_id,
+        "folders": list(folder_map.values()),
+        "total_audio_files": total_auds,
+        "total_folders": len(folder_map)
+    }
+
+@app.post("/api/audio/start")
+async def api_audio_start(req: AudioStartRequest):
+    if not req.folder_paths:
+        raise HTTPException(status_code=400, detail="Pilih setidaknya 1 folder/file audio untuk di-enhance.")
+
+    scan_res = scan_input_audio(req.folder_paths)
+    if scan_res["total_audio_files"] == 0:
+        raise HTTPException(status_code=400, detail="Tidak ditemukan file audio di dalam folder yang dipilih.")
+
+    job_id = uuid.uuid4().hex[:10]
+    target_dir = req.target_folder.strip() if req.target_folder and req.target_folder.strip() else DEFAULT_AUDIO_OUTPUT
+
+    audio_jobs[job_id] = {
+        "id": job_id,
+        "status": "pending",
+        "progress": 0,
+        "message": "Menyiapkan antrean audio...",
+        "total_audio": scan_res["total_audio_files"],
+        "processed_audio": 0,
+        "error": None,
+        "target_folder": os.path.abspath(target_dir),
+        "has_preview": False
+    }
+
+    executor.submit(
+        run_audio_enhancement_process,
+        job_id,
+        scan_res["_raw_data"],
+        target_dir,
+        req.mode,
+        req.strength,
+        req.output_format
+    )
+
+    return {"job_id": job_id, "total_audio": scan_res["total_audio_files"]}
+
+@app.get("/api/audio/status/{job_id}")
+async def api_audio_status(job_id: str):
+    job = audio_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job audio tidak ditemukan.")
+    return job
+
+@app.post("/api/audio/cancel/{job_id}")
+async def api_audio_cancel(job_id: str):
+    job = audio_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job audio tidak ditemukan.")
+
+    job["status"] = "cancelled"
+    job["message"] = "Proses dibatalkan oleh pengguna."
+
+    proc = active_audio_processes.get(job_id)
+    if proc:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+    return {"status": "success", "message": "Proses audio berhasil dibatalkan."}
+
+@app.get("/api/audio/preview/{job_id}/{kind}")
+async def api_audio_preview(job_id: str, kind: str):
+    """Serves the before or after preview sample audio."""
+    filename = f"{job_id}_{kind}.mp3"
+    file_path = os.path.join(PREVIEW_DIR, filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Sampel preview audio tidak ditemukan.")
+    return FileResponse(file_path, media_type="audio/mpeg")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
